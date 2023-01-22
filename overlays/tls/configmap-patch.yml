@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mosquitto-config
+data:
+  mosquitto.conf: |-
+    listener 1883
+    allow_anonymous false
+    password_file /mosquitto/config/password_file.txt
+    # ssl settings
+    cafile /mosquitto/certs/ca.crt
+    keyfile /mosquitto/certs/server.key
+    certfile /mosquitto/certs/server.crt

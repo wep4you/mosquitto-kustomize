@@ -1,0 +1,18 @@
+{
+    "CN": "{{ ca.csr.cn }}",
+    "key": {
+        "algo": "{{ ca.csr.key.algo }}",
+        "size": {{ ca.csr.key.size }}
+    },
+    "names": [
+        {
+            "C": "{{ ca.csr.name.c }}",
+            "L": "{{ ca.csr.name.l }}",
+            "O": "{{ ca.csr.name.o }}",
+            "ST": "{{ ca.csr.name.st }}"
+        }
+    ],
+    "ca": {
+       "expiry": "{{ ca.csr.ca.expiry }}"
+    }
+}

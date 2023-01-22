@@ -1,0 +1,80 @@
+---
+- hosts: localhost
+
+  vars:
+
+    cert_templates: ./files
+    pki_dir: ./certs
+
+    ca:
+      config:
+        expiry: "87600h"
+      csr:
+        cn: "172.16.207.215"
+        key: 
+          algo: "rsa"
+          size: 4096
+        name:
+          c: "YOUR Country Code"
+          l: "YOUR Country Name"
+          o: "YOUR Organization"
+          st: "YOUR Street"
+        ca:
+          expiry: "87600h"
+
+    servers:
+      - name: "server"
+        ip: "172.16.207.215"
+        fqdn1: "mosquitto.cluster.local"
+        fqdn2: "mosquitto.local"
+
+    clients:
+      - name: "client-1"
+      - name: "client-2"
+      - name: "client-3"
+
+  tasks:
+    - name: Ensure PKI directory exists
+      file:
+        path: "{{ pki_dir }}"
+        state: directory
+      delegate_to: localhost
+
+    - name: Create ca-config file
+      template: 
+        src: "{{ cert_templates }}/ca-config.json.j2"
+        dest: "{{ pki_dir }}/ca-config.json"
+      delegate_to: localhost
+
+    - name: Create ca-csr file
+      template: 
+        src: "{{cert_templates}}/ca-csr.json.j2"
+        dest: "{{ pki_dir }}/ca-csr.json"
+      delegate_to: localhost
+
+    - name: Generate CA certificate
+      shell: cfssl gencert -initca ca-csr.json | cfssljson -bare ca -
+      args:
+        chdir: "{{ pki_dir }}"
+      delegate_to: localhost
+
+    - name: Generate server certificates
+      shell: echo '{"CN":"{{ item.name }}","hosts":[""],"key":{"algo":"{{ ca.csr.key.algo }}","size":{{ ca.csr.key.size }}}}' | cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server -hostname="{{ item.ip }},{{ item.name }},{{ item.fqdn1 }},{{ item.fqdn2 }},127.0.0.1,localhost" - | cfssljson -bare {{ item.name }}
+      args:
+        chdir: "{{ pki_dir }}"
+      with_items: "{{ servers }}"
+      delegate_to: localhost
+
+    - name: Generate client certificates
+      shell: echo '{"CN":"{{ item.name }}","hosts":[""],"key":{"algo":"{{ ca.csr.key.algo }}","size":{{ ca.csr.key.size }}}}' | cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client - | cfssljson -bare {{ item.name }} 
+      args:
+        chdir: "{{ pki_dir }}"
+      with_items: "{{ clients }}"
+      delegate_to: localhost
+
+    #- name: Generate client certificates Server
+    #  shell: echo '{"CN":"{{ item.name }}","hosts":[""],"key":{"algo":"{{ ca.csr.key.algo }}","size":{{ ca.csr.key.size }}}}' | cfssl gencert -ca=server.pem -ca-key=server-key.pem -config=ca-config.json -profile=client - | cfssljson -bare {{ item.name }} 
+    #  args:
+    #    chdir: "{{ pki_dir }}"
+    #  with_items: "{{ clients }}"
+    #  delegate_to: localhost

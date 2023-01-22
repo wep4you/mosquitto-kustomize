@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mosquitto
+spec:
+  template:
+    spec:
+      containers:
+      - name: mosquitto
+        volumeMounts:
+          - name: mosquitto-data
+            mountPath: /mosquitto/data
+          - name: password-file
+            mountPath: /mosquitto/config/password_file.txt
+            subPath: password_file.txt
+          - name: password-file
+            mountPath: /mosquitto/certs/ca.crt
+            subPath: ca.crt
+          - name: password-file
+            mountPath: /mosquitto/certs/server.key
+            subPath: server.key
+          - name: password-file
+            mountPath: /mosquitto/certs/server.crt
+            subPath: server.crt
+      volumes:
+        - name: mosquitto-data
+          persistentVolumeClaim:
+            claimName: mosquitto-pvc
+        - name: password-file
+          secret:
+            secretName: mosquitto-password     
